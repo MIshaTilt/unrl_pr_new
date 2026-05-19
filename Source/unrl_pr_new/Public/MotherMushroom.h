@@ -69,5 +69,5 @@ public:
 
 	// Для интерфейса BI_Interactable -> Interact
 	UFUNCTION(BlueprintCallable, Category = "Interaction")
-	void SpawnAndPossessButterfly();
+	APawn* SpawnButterfly();
 };

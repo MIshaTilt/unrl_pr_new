@@ -53,28 +53,39 @@ bool AMotherMushroom::AddSpores(int32 Amount)
 	return true; // Ресурсы успешно приняты
 }
 
-void AMotherMushroom::SpawnAndPossessButterfly()
+APawn* AMotherMushroom::SpawnButterfly()
 {
-	// СТЕЙТ-МАШИНА: Защита. Бабочку можно выпустить только если гриб Готов!
+	// Защита стейт-машины
 	if (CurrentState != EMushroomState::ReadyToBloom)
 	{
-		return;
+		return nullptr; // Если не готовы, возвращаем пустоту
 	}
 
-	// Проверяем, указан ли класс бабочки в настройках
+	APawn* SpawnedButterfly = nullptr;
+
 	if (ButterflyClass)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		SpawnParams.Owner = this;
 
 		// Спавним бабочку
-		APawn* SpawnedButterfly = GetWorld()->SpawnActor<APawn>(
+		SpawnedButterfly = GetWorld()->SpawnActor<APawn>(
 			ButterflyClass, 
 			ButterflySpawnPoint->GetComponentLocation(), 
 			ButterflySpawnPoint->GetComponentRotation(), 
 			SpawnParams
 		);
 
-		
+		// Если спавн прошел успешно
+		if (SpawnedButterfly)
+		{
+			// Сбрасываем стейт гриба (как ты и хотел)
+			CurrentState = EMushroomState::NeedsSpores;
+			OnStateChanged(CurrentState);
+		}
 	}
+
+	// Возвращаем заспавненную бабочку в Блюпринт!
+	return SpawnedButterfly; 
 }
