@@ -14,10 +14,20 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	
+	UPROPERTY(EditAnywhere, Category = "Spawner Settings")
+	float CooldownDuration = 60.0f; 
 
 	// Зона, в которую должен войти игрок для активации
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USphereComponent* TriggerZone;
+	
+	UPROPERTY(EditAnywhere, Category = "Spawner Settings")
+	int32 MaxPlayerSpores = 20;
+
+	// Эта функция вызывается в C++, но её логика прописывается в Blueprint!
+	UFUNCTION(BlueprintNativeEvent, Category = "Spawner Settings")
+	int32 GetPlayerSporeCount(AActor* PlayerActor);
 
 	// --- ПАРАМЕТРЫ ГЕНЕРАЦИИ И ВАРИАТИВНОСТЬ ---
 	
@@ -38,6 +48,13 @@ protected:
 	float SpawnRadius = 300.0f; // Радиус вокруг игрока, где появятся споры
 
 private:
+	
+	FTimerHandle CooldownTimerHandle;
+
+	// Функция, которая "будит" спавнер
+	void WakeUp();
+
+	
 	// Функция, которая сработает при входе в зону
 	UFUNCTION()
 	void OnPlayerEnter(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, 

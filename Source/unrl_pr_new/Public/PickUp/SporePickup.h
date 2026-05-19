@@ -20,6 +20,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USceneComponent* RootComp;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spore Settings")
+	float LifeTime = 10.0f;
 
 	// --- ПАРАМЕТРЫ ПОЛЕТА (можно будет менять в Блюпринте для разных спор) ---
 	

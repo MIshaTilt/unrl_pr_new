@@ -34,6 +34,11 @@ void AMyceliumSpawner::OnPlayerEnter(UPrimitiveComponent* OverlappedComponent, A
 	{
 		// Запоминаем игрока, чтобы спавнить споры вокруг него
 		TargetPlayer = OtherActor;
+		
+		if (GetPlayerSporeCount(TargetPlayer) >= MaxPlayerSpores)
+		{
+			return;
+		}
 
 		// Отключаем коллизию, чтобы спавнер не сработал второй раз
 		TriggerZone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -51,12 +56,25 @@ void AMyceliumSpawner::OnPlayerEnter(UPrimitiveComponent* OverlappedComponent, A
 	}
 }
 
+int32 AMyceliumSpawner::GetPlayerSporeCount_Implementation(AActor* PlayerActor)
+{
+	return 0; 
+}
+
 void AMyceliumSpawner::SpawnSingleSpore()
 {
 	// Проверяем, есть ли классы для спавна в массиве и не исчез ли игрок
 	if (SporeClasses.Num() == 0 || !TargetPlayer)
 	{
-		Destroy(); // Если настройки пустые - просто удаляем спавнер
+		return;
+	}
+	
+	if (GetPlayerSporeCount(TargetPlayer) >= MaxPlayerSpores)
+	{
+		GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle); // Останавливаем спавн
+		
+		// ЗАПУСКАЕМ КУЛДАУН вместо Destroy()
+		GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &AMyceliumSpawner::WakeUp, CooldownDuration, false);
 		return;
 	}
 
@@ -85,13 +103,36 @@ void AMyceliumSpawner::SpawnSingleSpore()
 	// Увеличиваем счетчик
 	SporesSpawned++;
 
-	// Если заспавнили все споры
+	// Если заспавнили все запланированные споры:
 	if (SporesSpawned >= TotalSporesToSpawn)
 	{
-		// Останавливаем таймер
-		GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(SpawnTimerHandle); // Останавливаем спавн
 		
-		// Грибница исчерпала себя - уничтожаем спавнер
-		Destroy();
+		// ЗАПУСКАЕМ КУЛДАУН на 1 минуту
+		GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, this, &AMyceliumSpawner::WakeUp, CooldownDuration, false);
+	}
+}
+
+void AMyceliumSpawner::WakeUp()
+{
+	if (TriggerZone)
+	{
+		// 1. Снова включаем коллизию, спавнер проснулся!
+		TriggerZone->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+
+		// 2. Изящная фишка: проверяем, не стоит ли игрок всё ещё внутри зоны
+		TArray<AActor*> OverlappingActors;
+		TriggerZone->GetOverlappingActors(OverlappingActors, APawn::StaticClass());
+
+		for (AActor* Actor : OverlappingActors)
+		{
+			// Если внутри стоит игрок
+			if (Actor == TargetPlayer)
+			{
+				// Искусственно "толкаем" функцию входа, как будто он только что зашел
+				OnPlayerEnter(TriggerZone, Actor, nullptr, 0, false, FHitResult());
+				break;
+			}
+		}
 	}
 }

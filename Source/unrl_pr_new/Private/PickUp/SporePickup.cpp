@@ -19,6 +19,8 @@ void ASporePickup::BeginPlay()
 
 	// Сразу выбираем первую случайную точку для полета
 	PickNewTargetLocation();
+	
+	SetLifeSpan(LifeTime);
 }
 
 void ASporePickup::Tick(float DeltaTime)
